@@ -19,10 +19,9 @@ public class BankXpValueTutorialOverlay extends OverlayPanel {
     private final BankXpValuePlugin plugin;
     private final BankXpValueOverlay overlay;
     public boolean nextTip = false;
-    private Widget bank;
 
     @Inject
-    private BankXpValueTutorialOverlay(Client client, BankXpValueConfig config, BankXpValuePlugin plugin, BankXpValueOverlay overlay){
+    private BankXpValueTutorialOverlay(Client client, BankXpValueConfig config, BankXpValuePlugin plugin, BankXpValueOverlay overlay) {
         this.client = client;
         this.config = config;
         this.plugin = plugin;
@@ -33,26 +32,26 @@ public class BankXpValueTutorialOverlay extends OverlayPanel {
     }
 
     @Override
-    public Dimension render(Graphics2D graphics){
-        if (!config.showTutorial()){
+    public Dimension render(Graphics2D graphics) {
+        if (!config.showTutorial()) {
             return null;
         }
 
-        bank = client.getWidget(WidgetInfo.BANK_CONTAINER);
+        Widget bank = client.getWidget(WidgetInfo.BANK_CONTAINER);
 
-        if (bank == null || bank.isHidden()){
+        if (bank == null || bank.isHidden()) {
             return null;
         }
 
         Widget button = client.getWidget(WidgetInfo.BANK_SETTINGS_BUTTON);
-        if (button == null || button.isSelfHidden() || button.getDynamicChildren()[0].getSpriteId() != 195){
+        if (button == null || button.isSelfHidden() || button.getDynamicChildren()[0].getSpriteId() != 195) {
             return null;
         }
 
         Rectangle bounds = button.getBounds();
 
         // If on tutorial step 1/2
-        if (!nextTip){
+        if (!nextTip) {
             graphics.setColor(ColorScheme.BRAND_ORANGE);
             graphics.setStroke(new BasicStroke(2));
             graphics.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
@@ -68,7 +67,7 @@ public class BankXpValueTutorialOverlay extends OverlayPanel {
             graphics.drawString("to see your Banked XP", bounds.x + bounds.width + 5, bounds.y + 12);
         }
         // If on tutorial step 2/2
-        else{
+        else {
             int x = overlay.getPreferredLocation().x + 3;
             int y = overlay.getPreferredLocation().y + 181;
 
@@ -87,7 +86,7 @@ public class BankXpValueTutorialOverlay extends OverlayPanel {
             graphics.drawString("to see items", x + 205, y + 26);
 
             final net.runelite.api.Point cursor = client.getMouseCanvasPosition();
-            if (new Rectangle(x, y, 200, 23).contains(cursor.getX(), cursor.getY())){
+            if (new Rectangle(x, y, 200, 23).contains(cursor.getX(), cursor.getY())) {
                 nextTip = false;
                 plugin.hideTutorial();
             }

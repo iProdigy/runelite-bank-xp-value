@@ -13,13 +13,14 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.eventbus.Subscribe;
 import com.google.inject.Provides;
+
 import javax.inject.Inject;
 import java.util.Arrays;
 
 @PluginDescriptor(
     name = "Bank XP Value",
     description = "All-in-one banked xp viewer + item xp tooltips",
-    tags = {"bank", "xp", "calc", "item", "skill", "overlay", "tooltip"}
+    tags = { "bank", "xp", "calc", "item", "skill", "overlay", "tooltip" }
 )
 public class BankXpValuePlugin extends Plugin {
     public static final String CONFIG_GROUP = "bankxpvalue";
@@ -46,40 +47,39 @@ public class BankXpValuePlugin extends Plugin {
     private ItemDataCache data;
 
     private Widget bank;
-    private ItemContainer bankContainer;
     private ItemContainer seedVaultContainer;
     private boolean pluginToggled = false;
 
     @Provides
-    BankXpValueConfig provideConfig(ConfigManager configManager){
+    BankXpValueConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(BankXpValueConfig.class);
     }
 
     @Override
-    protected void startUp() throws Exception{
-        if (config.showTutorial()){
+    protected void startUp() throws Exception {
+        if (config.showTutorial()) {
             overlayManager.add(tutorialOverlay);
         }
-        if (config.showItemXpTooltips()){
+        if (config.showItemXpTooltips()) {
             overlayManager.add(itemOverlay);
         }
     }
 
     @Override
-    protected void shutDown() throws Exception{
+    protected void shutDown() throws Exception {
         overlayManager.remove(overlay);
         overlayManager.remove(tutorialOverlay);
         overlayManager.remove(itemOverlay);
     }
 
     @Subscribe
-    public void onMenuEntryAdded(MenuEntryAdded event){
+    public void onMenuEntryAdded(MenuEntryAdded event) {
         if (event.getType() != MenuAction.CC_OP.getId() || !event.getOption().equals("Show menu")
-                || (event.getActionParam1() >> 16) != WidgetID.BANK_GROUP_ID){
+            || (event.getActionParam1() >> 16) != WidgetID.BANK_GROUP_ID) {
             return;
         }
 
-        if (config.showTutorial()){
+        if (config.showTutorial()) {
             client.createMenuEntry(-1)
                 .setOption("Disable tutorial")
                 .setTarget("")
@@ -99,51 +99,49 @@ public class BankXpValuePlugin extends Plugin {
             .setDeprioritized(true);
     }
 
-    public void onClick(MenuEntry entry){
+    public void onClick(MenuEntry entry) {
         bank = client.getWidget(WidgetInfo.BANK_CONTAINER);
-        if (bank == null){
+        if (bank == null) {
             overlayManager.remove(overlay);
             pluginToggled = false;
             return;
         }
 
-        if (config.showTutorial()){
+        if (config.showTutorial()) {
             tutorialOverlay.nextTip = true;
         }
 
         pluginToggled = !pluginToggled;
-        if (pluginToggled){
+        if (pluginToggled) {
             calculate();
             overlayManager.add(overlay);
             if (config.resetToCenter()) {
                 overlay.resetPositionToCenter();
             }
-        }
-        else{
+        } else {
             overlayManager.remove(overlay);
             hideTutorial();
         }
     }
 
     @Subscribe
-    public void onItemContainerChanged(ItemContainerChanged event){
-        if (event.getContainerId() == InventoryID.SEED_VAULT.getId() && config.includeSeedVault()){
+    public void onItemContainerChanged(ItemContainerChanged event) {
+        if (event.getContainerId() == InventoryID.SEED_VAULT.getId() && config.includeSeedVault()) {
             seedVaultContainer = client.getItemContainer(InventoryID.SEED_VAULT);
-        }
-        else if (bank != null && event.getContainerId() == InventoryID.BANK.getId()){
+        } else if (bank != null && event.getContainerId() == InventoryID.BANK.getId()) {
             calculate();
         }
     }
 
     @Subscribe
-    public void onConfigChanged(ConfigChanged configChanged){
-        if (configChanged.getKey().equals("bankxpvalueplugin")){
+    public void onConfigChanged(ConfigChanged configChanged) {
+        if (configChanged.getKey().equals("bankxpvalueplugin")) {
             hideTutorial();
             hideOverlay();
             overlayManager.remove(itemOverlay);
         }
 
-        if (!configChanged.getGroup().equals(CONFIG_GROUP)){
+        if (!configChanged.getGroup().equals(CONFIG_GROUP)) {
             return;
         }
 
@@ -152,34 +150,33 @@ public class BankXpValuePlugin extends Plugin {
             overlay.resetPositionToCenter();
         }
 
-        if (configChanged.getKey().equals("tutorial")){
-            if (config.showTutorial()){
+        if (configChanged.getKey().equals("tutorial")) {
+            if (config.showTutorial()) {
                 hideOverlay();
                 config.setTutorial(true);
                 overlayManager.add(tutorialOverlay);
-            }
-            else{
+            } else {
                 hideTutorial();
             }
         }
 
-        if (configChanged.getKey().equals("includeSeedVault")){
+        if (configChanged.getKey().equals("includeSeedVault")) {
             calculate();
         }
     }
 
     // Includes seed vault items if config set
-    private Item[] includeSeedVault(Item[] items){
+    private Item[] includeSeedVault(Item[] items) {
         ItemContainer container = seedVaultContainer;
 
-        if (container == null || container.size() == 0){
+        if (container == null || container.size() == 0) {
             return items;
         }
 
         Item[] moreItems = Arrays.copyOf(items, items.length + container.size());
 
         int count = 0;
-        for (int i = items.length; i < moreItems.length; i++){
+        for (int i = items.length; i < moreItems.length; i++) {
             moreItems[i] = container.getItem(count);
             count++;
         }
@@ -187,12 +184,12 @@ public class BankXpValuePlugin extends Plugin {
     }
 
     // Sends bank data to calculate totals
-    private void calculate(){
-        bankContainer = client.getItemContainer(InventoryID.BANK);
-        if (bankContainer != null){
+    private void calculate() {
+        ItemContainer bankContainer = client.getItemContainer(InventoryID.BANK);
+        if (bankContainer != null) {
             Item[] items = bankContainer.getItems();
 
-            if (config.includeSeedVault()){
+            if (config.includeSeedVault()) {
                 items = includeSeedVault(items);
             }
 
@@ -201,13 +198,13 @@ public class BankXpValuePlugin extends Plugin {
     }
 
     // Hides overlay on hidden detection
-    public void hideOverlay(){
+    public void hideOverlay() {
         pluginToggled = false;
         overlayManager.remove(overlay);
     }
 
     // Hides tutorial overlay
-    public void hideTutorial(){
+    public void hideTutorial() {
         overlayManager.remove(tutorialOverlay);
         config.setTutorial(false);
         tutorialOverlay.nextTip = false;

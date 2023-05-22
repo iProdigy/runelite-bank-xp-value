@@ -25,8 +25,7 @@ public class BankXpValueItemOverlay extends Overlay {
     ItemDataCache data;
 
     @Inject
-    BankXpValueItemOverlay(Client client, BankXpValueConfig config, TooltipManager tooltipManager)
-    {
+    BankXpValueItemOverlay(Client client, BankXpValueConfig config, TooltipManager tooltipManager) {
         setPosition(OverlayPosition.DYNAMIC);
         setPriority(OverlayPriority.HIGHEST);
         this.client = client;
@@ -35,8 +34,7 @@ public class BankXpValueItemOverlay extends Overlay {
     }
 
     @Override
-    public Dimension render(Graphics2D graphics)
-    {
+    public Dimension render(Graphics2D graphics) {
         if (!config.showItemXpTooltips() || client.isMenuOpen()) {
             return null;
         }
@@ -48,36 +46,32 @@ public class BankXpValueItemOverlay extends Overlay {
         }
 
         final ItemContainer bank = client.getItemContainer(InventoryID.BANK);
+        if (bank == null) {
+            return null;
+        }
+
         final MenuEntry menuEntry = menuEntries[menuEntries.length - 1];
         final int widgetId = menuEntry.getParam1();
 
-        if (widgetId != WidgetInfo.BANK_ITEM_CONTAINER.getId()){
+        if (widgetId != WidgetInfo.BANK_ITEM_CONTAINER.getId()) {
             return null;
         }
 
         final int index = menuEntry.getParam0();
-        Item item;
-
-
-        if (null == bank.getItem(index)){
+        Item item = bank.getItem(index);
+        if (item == null) {
             return null;
-        }
-        else{
-            item = bank.getItem(index);
         }
 
         final StringBuilder xpValue = new StringBuilder();
 
-        try{
-            if (null != data.getItem(item.getId())){
-                ItemDataCache.ItemData itemData = data.getItem(item.getId());
-
-                xpValue.append(getColoredSkill(itemData.skill.substring(0, 1).toUpperCase() + itemData.skill.substring(1) + ": "));
-                xpValue.append(QuantityFormatter.quantityToStackSize((long)(itemData.xp * item.getQuantity())));
-                xpValue.append(" xp (" + QuantityFormatter.formatNumber(itemData.xp) + " ea)");
-            }
-        }
-        catch (Exception e){
+        try {
+            data.getItem(item.getId()).ifPresent(itemData -> {
+                xpValue.append(getColoredSkill(itemData.getSkill().substring(0, 1).toUpperCase() + itemData.getSkill().substring(1) + ": "));
+                xpValue.append(QuantityFormatter.quantityToStackSize((long) (itemData.getXp() * item.getQuantity())));
+                xpValue.append(" xp (").append(QuantityFormatter.formatNumber(itemData.getXp())).append(" ea)");
+            });
+        } catch (Exception e) {
             // Hovered over "view tab" label
         }
 
@@ -88,35 +82,35 @@ public class BankXpValueItemOverlay extends Overlay {
     }
 
     // Colors the skill portion of the tooltip
-    private String getColoredSkill(String skill){
-        switch (skill){
+    private String getColoredSkill(String skill) {
+        switch (skill) {
             case "Construction: ":
                 return ColorUtil.wrapWithColorTag("Construction: ",
-                        SkillColor.CONSTRUCTION.getColor().brighter().brighter());
+                    SkillColor.CONSTRUCTION.getColor().brighter().brighter());
             case "Cooking: ":
                 return ColorUtil.wrapWithColorTag("Cooking: ",
-                        SkillColor.COOKING.getColor().brighter().brighter());
+                    SkillColor.COOKING.getColor().brighter().brighter());
             case "Crafting: ":
                 return ColorUtil.wrapWithColorTag("Crafting: ",
-                        SkillColor.CRAFTING.getColor().brighter().brighter());
+                    SkillColor.CRAFTING.getColor().brighter().brighter());
             case "Farming: ":
                 return ColorUtil.wrapWithColorTag("Farming: ",
-                        SkillColor.FARMING.getColor().brighter().brighter());
+                    SkillColor.FARMING.getColor().brighter().brighter());
             case "Firemaking: ":
                 return ColorUtil.wrapWithColorTag("Firemaking: ",
-                        new Color(255, 119, 0));
+                    new Color(255, 119, 0));
             case "Fletching: ":
                 return ColorUtil.wrapWithColorTag("Fletching: ",
-                        SkillColor.FLETCHING.getColor().brighter().brighter());
+                    SkillColor.FLETCHING.getColor().brighter().brighter());
             case "Herblore: ":
                 return ColorUtil.wrapWithColorTag("Herblore: ",
-                        SkillColor.HERBLORE.getColor().brighter().brighter());
+                    SkillColor.HERBLORE.getColor().brighter().brighter());
             case "Prayer: ":
                 return ColorUtil.wrapWithColorTag("Prayer: ",
-                        SkillColor.PRAYER.getColor().brighter().brighter());
+                    SkillColor.PRAYER.getColor().brighter().brighter());
             case "Smithing: ":
                 return ColorUtil.wrapWithColorTag("Smithing: ",
-                        SkillColor.SMITHING.getColor().brighter().brighter());
+                    SkillColor.SMITHING.getColor().brighter().brighter());
         }
         return skill;
     }

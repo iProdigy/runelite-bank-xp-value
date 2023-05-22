@@ -1,70 +1,63 @@
 package com.bankxpvalue;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
+import lombok.Data;
+import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Item;
+import net.runelite.client.game.ItemManager;
+import net.runelite.client.ui.overlay.components.ImageComponent;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.HashMap;
 import java.util.ArrayList;
-import com.google.gson.Gson;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Item;
-import java.awt.image.BufferedImage;
-import net.runelite.client.game.ItemManager;
-import net.runelite.client.ui.overlay.components.ImageComponent;
-import lombok.AllArgsConstructor;
-import javax.inject.Inject;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
+@Singleton
 public class ItemDataCache {
 
-    @AllArgsConstructor
-    class ItemData{
-        public int id;
-        public double xp;
-        public String skill;
+    @Value
+    static class ItemData {
+        int id;
+        double xp;
+        String skill;
     }
 
-    @AllArgsConstructor
-    class SkillContents{
-        public double total;
-        public List<ImageComponent> images;
+    @Data
+    static class SkillContents {
+        double total = 0;
+        List<ImageComponent> images = new ArrayList<>();
     }
 
-    @AllArgsConstructor
-    class ItemDataContainer{
+    @Value
+    static class ItemDataContainer {
         List<ItemData> items;
     }
 
-    private static HashMap<String, Integer> skills = new HashMap<>();
-    private static HashMap<Integer, ItemData> cache = new HashMap<>();
+    private static final Map<String, Integer> skills;
+    private final Map<Integer, ItemData> cache = new HashMap<>();
     private final ItemManager itemManager;
     private final Gson gson;
 
     @Inject
-    public ItemDataCache(ItemManager itemManager, Gson gson){
+    public ItemDataCache(ItemManager itemManager, Gson gson) {
         this.itemManager = itemManager;
         this.gson = gson;
-        mapSkills();
         populateCache();
     }
 
-    // Set the skills
-    private void mapSkills(){
-        skills.put("construction", 0);
-        skills.put("cooking", 1);
-        skills.put("crafting", 2);
-        skills.put("farming", 3);
-        skills.put("firemaking", 4);
-        skills.put("fletching", 5);
-        skills.put("herblore", 6);
-        skills.put("prayer", 7);
-        skills.put("smithing", 8);
-    }
-
     // Stores json data in hashmap
-    private void populateCache(){
+    private void populateCache() {
         try (Reader reader = new InputStreamReader(getClass().getResourceAsStream("/item_xp_data.json"), StandardCharsets.UTF_8)) {
             ItemDataContainer data = gson.fromJson(reader, ItemDataContainer.class);
             for (ItemData item : data.items) {
@@ -76,34 +69,48 @@ public class ItemDataCache {
     }
 
     // Computes the total xp for each skill
-    public SkillContents[] getTotals(Item[] items){
-        SkillContents[] skillContents = new SkillContents[10];
+    public SkillContents[] getTotals(Item[] items) {
+        final int n = skills.size() + 1;
+        SkillContents[] skillContents = new SkillContents[n];
 
-        for (int i = 0; i < skillContents.length; i++){
-            skillContents[i] = new SkillContents(0.0, new ArrayList<>());
+        for (int i = 0; i < n; i++) {
+            skillContents[i] = new SkillContents();
         }
 
-        for (int i = 0; i < items.length; i++){
-            if (cache.containsKey(items[i].getId())){
-                ItemData data = cache.get(items[i].getId());
+        SkillContents total = skillContents[n - 1];
+
+        for (Item item : items) {
+            getItem(item.getId()).ifPresent(data -> {
+                SkillContents skillContent = skillContents[skills.get(data.skill)];
 
                 // Add the XP to the skill's total
-                skillContents[skills.get(data.skill)].total += data.xp * items[i].getQuantity();
-                skillContents[9].total += data.xp * items[i].getQuantity();
+                skillContent.total += data.xp * item.getQuantity();
+                total.total += data.xp * item.getQuantity();
 
                 // Add the image to the skill's tooltip
-                final BufferedImage image = itemManager.getImage(items[i].getId(), items[i].getQuantity(), true);
-                skillContents[skills.get(data.skill)].images.add(new ImageComponent(image));
-            }
+                final BufferedImage image = itemManager.getImage(item.getId(), item.getQuantity(), true);
+                skillContent.images.add(new ImageComponent(image));
+            });
         }
         return skillContents;
     }
 
     // Outside classes use to search hash table
-    public ItemData getItem(int id){
-        if (cache.containsKey(id)){
-            return cache.get(id);
-        }
-        return null;
+    public Optional<ItemData> getItem(int id) {
+        return Optional.ofNullable(cache.get(id));
+    }
+
+    static {
+        skills = ImmutableMap.<String, Integer>builder()
+            .put("construction", 0)
+            .put("cooking", 1)
+            .put("crafting", 2)
+            .put("farming", 3)
+            .put("firemaking", 4)
+            .put("fletching", 5)
+            .put("herblore", 6)
+            .put("prayer", 7)
+            .put("smithing", 8)
+            .build();
     }
 }
